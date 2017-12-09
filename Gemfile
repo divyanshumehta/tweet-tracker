@@ -25,6 +25,7 @@ gem 'jbuilder', '~> 2.5'
 # gem 'bcrypt', '~> 3.1.7'
 gem 'mongoid'
 gem 'bson_ext'
+gem 'twitter'
 # Use Capistrano for deployment
 # gem 'capistrano-rails', group: :development
 

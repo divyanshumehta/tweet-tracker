@@ -3,4 +3,5 @@ Rails.application.routes.draw do
   get '/get_tweets' => 'home#get_tweet'
   get '/notify' => 'home#notifier'
   get '/follow' => 'home#follow_user'
+  post '/new_client' => 'home#new_client'
 end

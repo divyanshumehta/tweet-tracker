@@ -1,5 +1,5 @@
 class HomeController < ApplicationController
-protect_from_forgery :except => [:notifier]
+protect_from_forgery :except => [:new_client]
 
   $twitter_client = Twitter::REST::Client.new do |config|
     config.consumer_key = Rails.application.secrets.consumer_key
@@ -9,6 +9,23 @@ protect_from_forgery :except => [:notifier]
   end
 
   def new_client
+    data = {}
+    client = Client.where(token:params[:token]).first
+    if client.nil?
+      client = Client.new
+      client.token = params[:token]
+      data[:status] = "OK"
+      if client.save!
+        data[:status] = "OK"
+      else
+        data[:status] = "SAVE ERROR"
+      end
+    else
+      data[:stauts] = "ERROR"
+    end
+    respond_to do |format|
+      format.json { render json: data }
+    end
   end
 
   def follow_user

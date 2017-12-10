@@ -1,4 +1,5 @@
 class HomeController < ApplicationController
+protect_from_forgery :except => [:notifier]
 
   $twitter_client = Twitter::REST::Client.new do |config|
     config.consumer_key = Rails.application.secrets.consumer_key
@@ -7,8 +8,55 @@ class HomeController < ApplicationController
     config.access_token_secret = Rails.application.secrets.access_token_secret
   end
 
+  def new_client
+  end
+
+  def follow_user
+    client = Client.where(token:params[:token]).first
+    users = params[:users].split(" ")
+    users.each do |user|
+      find = User.where(handle:user.handle).first
+      if find.nil?
+        u=User.new
+        u.handle = user
+        test_tweet = $twitter_client.user_timeline("#{user}", count: 1)
+        u.last_tweet = test_tweet[0].id.to_s
+        u.save
+        client.users << u
+        client.save
+      end
+    end
+  end
+
   def get_tweet
-    data = []
+    @data = []
+    client = Client.where(token:params[:token]).first
+    client.users.each do |user|
+
+      # Query all tweets of the user followed by client
+      db_tweets = Tweet.where(user_id:user.id,category: params[:category])
+      if db_tweets.count == 0
+        puts "No Tweets from user "+user.handle
+      else
+        db_tweets.each do |tweet|
+          @data << {handle: user.handle,text: tweet.text, tweet_at: tweet.tweeted_at, url: tweet.url}
+        end
+      end
+    end
+
+    if @data.count == 0
+      render html:"<h1>No Tweets in this category</h1>".html_safe
+    else
+      # return all tweets including old ones
+      @data.sort_by { |hsh| hsh[:tweeted_at] }.reverse
+    end
+  end
+
+  def notifier
+    data = {}
+    data[:text] = false;
+    data[:photo] = false;
+    data[:text_and_photo] = false;
     client = Client.where(token:params[:token]).first
     client.users.each do |user|
 
@@ -17,7 +65,6 @@ class HomeController < ApplicationController
 
       # Add new tweets to DB
       if test_tweet[0].id > user.last_tweet.to_i
-        # get all new tweets only
         puts "New Tweets found for user:" + user.handle
         tweets = $twitter_client.user_timeline("#{user.handle}", since_id: user.last_tweet.to_i)
         puts "Count of new tweets for user:" + user.handle + " " + tweets.count.to_s
@@ -29,14 +76,17 @@ class HomeController < ApplicationController
           if tweet.media?
             if tweet.media[0].type == 'photo'
               if tweet.full_text.blank?
+                data[:photo] = true
                 t.category = "photo"
               else
+                data[:text_and_photo] = true
                 t.category = "text and photo"
               end
             else
-              t.category = "other media"
+              #nothing happens
             end
           else
+            data[:text] = true
             t.category = "text"
           end
           t.user = User.where(handle:user.handle).first
@@ -47,23 +97,13 @@ class HomeController < ApplicationController
           t.save!
         end
       end
-
-    puts client
-      # Query all tweets of the user followed by client
-      db_tweets = Tweet.where(user_id:user.id)
-      db_tweets.each do |tweet|
-        data << {handle: user.handle, tweet_at: tweet.tweeted_at, url: tweet.url}
-      end
     end
 
-    # return all tweets including old ones
-    data.sort_by { |hsh| hsh[:tweeted_at] }.reverse
-
     # Respond with JSON
-    # respond_to do |format|
-    #   format.json { render json: data }
-    # end
-
+      puts data.inspect
+    respond_to do |format|
+      format.json { render json: data }
+    end
   end
 
 end

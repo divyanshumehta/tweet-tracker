@@ -1,0 +1,7 @@
+<% @data.each do |tweet| %>
+  <div>
+    <b><%= tweet[:handle] %></b> tweet at <tt><%= tweet[:tweet_at] %></tt><br/>
+    <%= tweet[:text] %></br>
+    <a href="<%= tweet[:url] %>">See tweet</a>
+  </div>
+<% end %>

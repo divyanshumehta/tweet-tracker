@@ -1,5 +1,5 @@
 class HomeController < ApplicationController
-protect_from_forgery :except => [:new_client]
+protect_from_forgery :except => [:new_client, :follow_user]
 
   $twitter_client = Twitter::REST::Client.new do |config|
     config.consumer_key = Rails.application.secrets.consumer_key
@@ -30,17 +30,19 @@ protect_from_forgery :except => [:new_client]
 
   def follow_user
     client = Client.where(token:params[:token]).first
-    users = params[:users].split(" ")
-    users.each do |user|
-      find = User.where(handle:user.handle).first
+    followed_users = params[:users].split(" ")
+    client.user_ids = nil
+    followed_users.each do |user|
+      find = User.where(handle:user).first
       if find.nil?
         u=User.new
         u.handle = user
         test_tweet = $twitter_client.user_timeline("#{user}", count: 1)
         u.last_tweet = test_tweet[0].id.to_s
         u.save
-        client.users << u
-        client.save
+        client.users<<u
+      else
+          client.users<<find
       end
     end
   end

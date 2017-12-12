@@ -3,7 +3,7 @@ class User
   include Mongoid::Timestamps::Created::Short
 
   field :handle,               type: String, default: ""
-  field :last_tweet,           type: String, default: "0"
+  field :last_tweet,           type: Integer
   has_and_belongs_to_many :clients
   has_many  :tweets
 end
